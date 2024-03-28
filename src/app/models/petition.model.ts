@@ -44,10 +44,10 @@ const viewAllPetitions = async(searchQuery: petitionQuery): Promise<{ count: num
                 query += ` ORDER BY title DESC`;
                 break;
             case 'COST_ASC':
-                query += ` ORDER BY (SELECT MIN(cost) FROM support_tier WHERE petition_id = id) `;
+                query += ` ORDER BY (SELECT MIN(cost) FROM support_tier WHERE petition_id = petition.id) `;
                 break;
             case 'COST_DESC':
-                query += ` ORDER BY (SELECT MIN(cost) FROM support_tier WHERE petition_id = id) `;
+                query += ` ORDER BY (SELECT MIN(cost) FROM support_tier WHERE petition_id = petition.id) DESC `;
                 break;
             case 'CREATED_ASC':
                 query += ` ORDER BY creation_date ASC`;
@@ -57,6 +57,7 @@ const viewAllPetitions = async(searchQuery: petitionQuery): Promise<{ count: num
                 break;
         }
     }
+    query += ` , id ASC`
     const countQuery = query;
     const countParams = queryParams;
     if (searchQuery.count !== -1) {
