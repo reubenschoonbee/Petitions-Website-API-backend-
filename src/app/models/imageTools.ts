@@ -1,5 +1,3 @@
-
-// unsure why octet stream is required//
 const getImageMimetype = (filename: string): string => {
     if (filename.endsWith('.jpeg') || filename.endsWith('.jpg')) return 'image/jpeg';
     if (filename.endsWith('.png')) return 'image/png';

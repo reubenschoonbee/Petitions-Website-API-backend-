@@ -8,18 +8,18 @@ import {uid} from 'rand-token';
 
 const register = async (req: Request, res: Response): Promise<void> => {
     try {
-        const validation = await validate(
+        const validationResult = await validate(
             schemas.user_register,
             req.body);
 
-        if (validation !== true) {
-            res.statusMessage = `Bad Request: ${validation.toString()}`;
+        if (validationResult !== true) {
+            res.statusMessage = `Bad Request: ${validationResult.toString()}`;
             res.status(400).send();
             return;
         }
         req.body.password = await passwords.hash(req.body.password)
-        const result = await User.register(req.body);
-        res.status( 201 ).send({"userId": result.insertId});
+        const registrationResult = await User.register(req.body);
+        res.status( 201 ).send({"userId": registrationResult.insertId});
         return;
     } catch (err) {
         Logger.error(err)
@@ -37,24 +37,24 @@ const register = async (req: Request, res: Response): Promise<void> => {
 
 const login = async (req: Request, res: Response): Promise<void> => {
     try {
-        const validation = await validate(
+        const validationResult = await validate(
             schemas.user_login,
             req.body);
 
-        if (validation !== true) {
-            res.statusMessage = `Bad Request: ${validation.toString()}`;
+        if (validationResult !== true) {
+            res.statusMessage = `Bad Request: ${validationResult.toString()}`;
             res.status(400).send();
             return;
         }
-        const user = await User.findUserByEmail(req.body.email);
-        if(user === null || !await passwords.compare(req.body.password, user.password)) {
+        const foundUser = await User.findUserByEmail(req.body.email);
+        if(foundUser === null || !await passwords.compare(req.body.password, foundUser.password)) {
             res.statusMessage = 'Invalid email/password';
             res.status(401).send();
             return;
         }
-        const token = uid(64)
-        await User.login(user.id, token)
-        res.status( 200 ).send({"userId": user.id, "token": token});
+        const authToken = uid(64)
+        await User.login(foundUser.id, authToken)
+        res.status( 200 ).send({"userId": foundUser.id, "token": authToken});
         return;
     } catch (err) {
         Logger.error(err)
@@ -81,23 +81,23 @@ const logout = async (req: Request, res: Response): Promise<void> => {
 // need to be logged in to view anyone's information, but can only view all information of own profile, hence relaxed authentication only required//
 const view = async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = parseInt(req.params.id, 10);
-        if (isNaN(id)) {
+        const userId = parseInt(req.params.id, 10);
+        if (isNaN(userId)) {
             res.statusMessage = "Id must be an integer"
             res.status(400).send();
             return;
         }
-        const user = await User.view(id)
-        if(user === null) {
+        const foundUser = await User.view(userId)
+        if(foundUser === null) {
             res.status(404).send("User not found");
             return;
         }
-        if(req.authId === id) {
-            res.status(200).send(user)
+        if(req.authId === userId) {
+            res.status(200).send(foundUser)
             return;
         }
-        delete user.email
-        res.status(200).send(user as userReturn)
+        delete foundUser.email
+        res.status(200).send(foundUser as userReturn)
         return;
     } catch (err) {
         Logger.error(err)
@@ -109,14 +109,14 @@ const view = async (req: Request, res: Response): Promise<void> => {
 
 const update = async (req: Request, res: Response): Promise<void> => {
     try {
-        const id = parseInt(req.params.id, 10);
-        if (isNaN(id)) {
+        const userId = parseInt(req.params.id, 10);
+        if (isNaN(userId)) {
             res.statusMessage = "Id must be an integer"
             res.status(400).send();
             return;
         }
-        const user = await User.findUserById(id)
-        if(user === null){
+        const foundUser = await User.findUserById(userId)
+        if(foundUser === null){
             res.status(404).send("User not found");
             return;
         }
@@ -125,29 +125,29 @@ const update = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const validation = await validate(
+        const validationResult = await validate(
             schemas.user_edit,
             req.body);
 
-        if (validation !== true) {
-            res.statusMessage = `Bad Request: ${validation.toString()}`;
+        if (validationResult !== true) {
+            res.statusMessage = `Bad Request: ${validationResult.toString()}`;
             res.status(400).send();
             return;
         }
 
         if(req.body.hasOwnProperty("password")) {
             if(req.body.hasOwnProperty("currentPassword")) {
-                if(!await passwords.compare(req.body.currentPassword, user.password)) {
+                if(!await passwords.compare(req.body.currentPassword, foundUser.password)) {
                     res.statusMessage = "Incorrect currentPassword";
                     res.status(401).send();
                     return;
                 } else {
-                    if(await passwords.compare(req.body.password, user.password)){
+                    if(await passwords.compare(req.body.password, foundUser.password)){
                         res.statusMessage = "New password can not be the same as old password";
                         res.status(403).send();
                         return;
                     }
-                    user.password = await passwords.hash(req.body.password);
+                    foundUser.password = await passwords.hash(req.body.password);
                 }
             } else {
                 res.statusMessage = "currentPassword must be supplied to change password";
@@ -156,15 +156,15 @@ const update = async (req: Request, res: Response): Promise<void> => {
             }
         }
         if(req.body.hasOwnProperty("email")) {
-            user.email = req.body.email;
+            foundUser.email = req.body.email;
         }
         if(req.body.hasOwnProperty("firstName")) {
-            user.firstName = req.body.firstName;
+            foundUser.firstName = req.body.firstName;
         }
         if(req.body.hasOwnProperty("lastName")) {
-            user.lastName = req.body.lastName;
+            foundUser.lastName = req.body.lastName;
         }
-        await User.update(user);
+        await User.update(foundUser);
         res.status(200).send();
         return;
     } catch (err) {
