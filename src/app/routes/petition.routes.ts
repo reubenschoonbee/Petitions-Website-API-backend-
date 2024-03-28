@@ -4,32 +4,33 @@ import * as petition from '../controllers/petition.controller'
 import * as petitionImage from '../controllers/petition.image.controller'
 import * as supportTiers from "../controllers/petition.support_tier.controller";
 import * as supporter from "../controllers/petition.supporter.controller";
+import {authenticate} from "../middleware/auth.middleware";
 
 module.exports = (app: Express) => {
     app.route(rootUrl+'/petitions')
         .get(petition.getAllPetitions)
-        .post(petition.addPetition);
+        .post(authenticate, petition.addPetition);
 
     app.route(rootUrl+'/petitions/categories')
         .get(petition.getCategories);
 
     app.route(rootUrl+'/petitions/:id')
         .get(petition.getPetition)
-        .patch(petition.editPetition)
-        .delete(petition.deletePetition);
+        .patch(authenticate, petition.editPetition)
+        .delete(authenticate, petition.deletePetition);
 
     app.route(rootUrl+'/petitions/:id/image')
         .get(petitionImage.getImage)
-        .put(petitionImage.setImage);
+        .put(authenticate, petitionImage.setImage);
 
     app.route(rootUrl+'/petitions/:id/supportTiers')
-        .put(supportTiers.addSupportTier);
+        .put(authenticate, supportTiers.addSupportTier);
 
     app.route(rootUrl+'/petitions/:id/supportTiers/:tierId')
-        .patch(supportTiers.editSupportTier)
-        .delete(supportTiers.deleteSupportTier);
+        .patch(authenticate, supportTiers.editSupportTier)
+        .delete(authenticate, supportTiers.deleteSupportTier);
 
     app.route(rootUrl + '/petitions/:id/supporters')
         .get(supporter.getAllSupportersForPetition)
-        .post(supporter.addSupporter);
+        .post(authenticate, supporter.addSupporter);
 }
